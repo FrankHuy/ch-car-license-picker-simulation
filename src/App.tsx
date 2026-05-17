@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { clearConfig, loadConfig, saveConfig } from "./storage";
 import {
   createDefaultConfig,
-  formatPlate,
   generateCandidates,
   getSequenceLength,
+  normalizePlate,
 } from "./plateEngine";
 import type { CandidateSource, PickerConfig, PickSession, PlateSegment, PlateType } from "./types";
 
@@ -291,10 +291,10 @@ function App() {
   return (
     <main className="kiosk-shell">
       <header className="kiosk-header">
-        <div className="national-mark">机动车业务办理系统</div>
+        <div className="national-mark">机动车自助选号系统</div>
         <div className="agency-title">
-          <strong>公安交通管理综合应用平台</strong>
-          <span>机动车号牌现场随机选号</span>
+          <strong>机动车自助选号系统</strong>
+          <span>现场随机选号</span>
         </div>
         <div className="header-status">
           <span>{PLATE_TYPE_LABELS[config.plateType]}</span>
@@ -305,10 +305,10 @@ function App() {
       </header>
 
       <section className="process-bar">
-        <Step active={screen === "notice"} done={screen !== "notice"} label="业务须知" />
-        <Step active={screen === "picking"} done={screen === "done"} label="随机选号" />
-        <Step active={screen === "done"} done={screen === "done"} label="确认号牌" />
-        <Step active={screen === "done"} done={screen === "done"} label="业务完成" />
+        <Step active={screen === "notice"} done={screen !== "notice"} label="第一步：阅读须知" />
+        <Step active={screen === "picking"} done={screen === "done"} label="第二步：随机选号" />
+        <Step active={screen === "done"} done={screen === "done"} label="第三步：确认号牌" />
+        <Step active={screen === "done"} done={screen === "done"} label="完成" />
       </section>
 
       {screen === "notice" ? (
@@ -345,12 +345,14 @@ function App() {
         <section className="picking-screen">
           <div className="selection-topline">
             <div>
-              <strong>请在下列号牌中选择一副</strong>
-              <span>点击号牌后，请按“确认号牌”完成本次选号。</span>
+              <strong>
+                请从 <b>50</b> 个号牌号码中选择，剩余时间 <b>{remaining}</b> 秒
+              </strong>
+              <span>点击号码后，请按“确认号牌”完成本次选号。</span>
             </div>
-            <div className={remaining <= 10 ? "kiosk-timer warning" : "kiosk-timer"}>
-              剩余时间 {formatSeconds(remaining)}
-            </div>
+            <button className="draw-button" type="button" onClick={startSession}>
+              开始选号
+            </button>
           </div>
 
           {session?.status === "expired" ? (
@@ -377,9 +379,8 @@ function App() {
                 type="button"
                 onClick={() => selectPlate(candidate.plate)}
               >
-                <span className="plate-index">{String(index + 1).padStart(2, "0")}</span>
-                <strong>{formatPlate(candidate.plate)}</strong>
-                <em>{SOURCE_LABELS[candidate.source]}</em>
+                <strong>{compactPlate(candidate.plate)}</strong>
+                <span>{String(index + 1).padStart(2, "0")}</span>
               </button>
             ))}
           </div>
@@ -387,7 +388,7 @@ function App() {
           <footer className="kiosk-footer">
             <div className="chosen-readout">
               <span>已选号牌</span>
-              <strong>{selectedCandidate ? formatPlate(selectedCandidate.plate) : "尚未选择"}</strong>
+              <strong>{selectedCandidate ? compactPlate(selectedCandidate.plate) : "尚未选择"}</strong>
             </div>
             <div className="kiosk-actions">
               <button className="kiosk-secondary" type="button" onClick={() => setScreen("notice")}>
@@ -411,7 +412,7 @@ function App() {
           <div className="success-panel">
             <div className="success-mark">选号成功</div>
             <p>您已确认机动车号牌</p>
-            <strong>{formatPlate(session.confirmedPlate)}</strong>
+            <strong>{compactPlate(session.confirmedPlate)}</strong>
             <span>
               来源：
               {SOURCE_LABELS[
@@ -461,6 +462,10 @@ function formatSeconds(seconds: number): string {
   const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
   const rest = Math.max(seconds % 60, 0).toString().padStart(2, "0");
   return `${minutes}:${rest}`;
+}
+
+function compactPlate(plate: string): string {
+  return normalizePlate(plate);
 }
 
 export default App;
