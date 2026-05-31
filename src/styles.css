@@ -589,12 +589,16 @@ textarea:focus {
 .official-plate.selected::before {
   color: #c81f2b;
   content: "✓";
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 900;
   left: 8px;
   line-height: 1;
   position: absolute;
-  top: 3px;
+  top: 4px;
+}
+
+.official-plate.selected strong {
+  transform: translateX(8px);
 }
 
 .official-plate.rolling {
