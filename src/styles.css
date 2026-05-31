@@ -442,7 +442,7 @@ textarea:focus {
   border: 0;
   display: flex;
   justify-content: space-between;
-  padding: 0 24px 8px;
+  padding: 0 24px 6px;
 }
 
 .selection-topline div:first-child {
@@ -466,6 +466,17 @@ textarea:focus {
   font-size: 18px;
 }
 
+.selection-control-row {
+  align-items: center;
+  border-bottom: 1px dashed #bbb5a5;
+  border-top: 1px dashed #bbb5a5;
+  display: grid;
+  grid-template-columns: 210px 1fr 210px;
+  margin: 4px 0 12px;
+  min-height: 46px;
+  padding: 6px 24px;
+}
+
 .draw-button {
   background: #0056df;
   border: 1px solid #2d70e6;
@@ -473,6 +484,30 @@ textarea:focus {
   font-weight: 700;
   min-width: 130px;
   padding: 8px 24px;
+}
+
+.draw-button.confirm {
+  background: #16a043;
+  border-color: #1d8d42;
+}
+
+.current-selection {
+  align-items: center;
+  background: #d9d7bd;
+  color: #333333;
+  display: flex;
+  font-size: 18px;
+  font-weight: 700;
+  gap: 12px;
+  justify-content: center;
+  justify-self: center;
+  min-width: 315px;
+  padding: 6px 20px;
+}
+
+.current-selection strong {
+  color: #c81f2b;
+  font-size: 20px;
 }
 
 .expired-banner,
@@ -497,28 +532,30 @@ textarea:focus {
   background: transparent;
   border: 0;
   display: grid;
-  gap: 22px 42px;
+  gap: 16px 42px;
   grid-template-columns: repeat(6, minmax(94px, 1fr));
-  margin-top: 10px;
+  margin-top: 0;
   padding: 16px 8px 10px;
 }
 
 .official-plate {
-  background: transparent;
-  border: 1px solid transparent;
+  background: #e4e8f3;
+  border: 1px solid #c7cfdf;
   border-radius: 0;
   color: #343434;
   display: grid;
   min-height: 26px;
-  padding: 2px 4px;
+  padding: 5px 4px;
   position: relative;
   text-align: center;
+  transition: none;
 }
 
 .official-plate strong {
   color: #333333;
   font-family: Arial, "Microsoft YaHei", sans-serif;
-  font-size: 15px;
+  font-size: 17px;
+  font-weight: 700;
   letter-spacing: 0;
   white-space: nowrap;
 }
@@ -529,13 +566,28 @@ textarea:focus {
 }
 
 .official-plate.selected {
-  background: #ffed8a;
-  border-color: #e02f2f;
-  box-shadow: 0 0 0 2px #e02f2f;
+  background: #e4e8f3;
+  border-color: #c7cfdf;
+  box-shadow: none;
 }
 
 .official-plate.selected strong {
-  color: #d60000;
+  color: #c81f2b;
+}
+
+.official-plate.selected::before {
+  color: #c81f2b;
+  content: "✓";
+  font-size: 24px;
+  font-weight: 900;
+  left: 8px;
+  line-height: 1;
+  position: absolute;
+  top: 3px;
+}
+
+.official-plate.rolling {
+  pointer-events: none;
 }
 
 .kiosk-footer {

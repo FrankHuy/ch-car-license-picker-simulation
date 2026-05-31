@@ -25,6 +25,8 @@ function App() {
   const [config, setConfig] = useState<PickerConfig>(() => loadConfig());
   const [screen, setScreen] = useState<Screen>("preset");
   const [session, setSession] = useState<PickSession | null>(null);
+  const [displayCandidates, setDisplayCandidates] = useState<PickSession["candidates"]>([]);
+  const [drawStarted, setDrawStarted] = useState(false);
   const [remaining, setRemaining] = useState(config.countdownSeconds);
 
   useEffect(() => {
@@ -51,6 +53,18 @@ function App() {
     return () => window.clearInterval(tick);
   }, [session]);
 
+  useEffect(() => {
+    if (!session || screen !== "picking" || drawStarted || session.status !== "picking") {
+      return;
+    }
+
+    const rolling = window.setInterval(() => {
+      setDisplayCandidates((current) => shuffleCandidates(current));
+    }, 120);
+
+    return () => window.clearInterval(rolling);
+  }, [drawStarted, screen, session]);
+
   const selectedCandidate = useMemo(() => {
     if (!session?.selectedPlate) {
       return undefined;
@@ -61,6 +75,7 @@ function App() {
   function updateConfig(nextConfig: PickerConfig) {
     setConfig(nextConfig);
     setSession(null);
+    setDrawStarted(false);
   }
 
   function updateSegment(id: string, patch: Partial<PlateSegment>) {
@@ -121,10 +136,26 @@ function App() {
     };
     setRemaining(config.countdownSeconds);
     setSession(nextSession);
+    setDisplayCandidates(result.candidates);
+    setDrawStarted(false);
     setScreen("picking");
   }
 
+  function startDraw() {
+    if (!session || session.status !== "picking" || displayCandidates.length === 0) {
+      return;
+    }
+
+    const firstPlate = displayCandidates[0].plate;
+    setDrawStarted(true);
+    setSession({ ...session, candidates: displayCandidates, selectedPlate: firstPlate });
+  }
+
   function selectPlate(plate: string) {
+    if (!drawStarted) {
+      return;
+    }
+
     setSession((current) =>
       current && current.status === "picking" ? { ...current, selectedPlate: plate } : current,
     );
@@ -143,6 +174,7 @@ function App() {
     clearConfig();
     setConfig(createDefaultConfig());
     setSession(null);
+    setDrawStarted(false);
   }
 
   if (screen === "preset") {
@@ -335,7 +367,7 @@ function App() {
               返回
             </button>
             <button className="kiosk-primary" type="button" onClick={startSession}>
-              开始随机选号
+              进入选号
             </button>
           </div>
         </section>
@@ -345,14 +377,33 @@ function App() {
         <section className="picking-screen">
           <div className="selection-topline">
             <div>
-              <strong>
-                请从 <b>50</b> 个号牌号码中选择，剩余时间 <b>{remaining}</b> 秒
-              </strong>
-              <span>点击号码后，请按“确认号牌”完成本次选号。</span>
+              {drawStarted ? (
+                <strong>
+                  请在 <b>{remaining}</b> 秒内点击<b>确认号牌</b>，共<b>50</b>个号牌号码供您选择，您可查看并点选心仪的号牌。
+                </strong>
+              ) : (
+                <strong>
+                  请在 <b>{remaining}</b> 秒内点击<b>开始选号</b>，共<b>50</b>个号牌号码供您选择，您可查看并点选心仪的号牌。
+                </strong>
+              )}
             </div>
-            <button className="draw-button" type="button" onClick={startSession}>
-              开始选号
+          </div>
+
+          <div className="selection-control-row">
+            <button
+              className={drawStarted ? "draw-button confirm" : "draw-button"}
+              disabled={!session || session.status !== "picking"}
+              type="button"
+              onClick={drawStarted ? confirmPlate : startDraw}
+            >
+              {drawStarted ? "确认号牌" : "开始选号"}
             </button>
+            {drawStarted ? (
+              <div className="current-selection">
+                <span>当前选择号码：</span>
+                <strong>{selectedCandidate ? compactPlate(selectedCandidate.plate) : ""}</strong>
+              </div>
+            ) : null}
           </div>
 
           {session?.status === "expired" ? (
@@ -368,13 +419,14 @@ function App() {
           ) : null}
 
           <div className="official-plate-grid">
-            {session?.candidates.map((candidate, index) => (
+            {displayCandidates.map((candidate, index) => (
               <button
                 className={[
                   "official-plate",
-                  session.selectedPlate === candidate.plate ? "selected" : "",
+                  session?.selectedPlate === candidate.plate ? "selected" : "",
+                  !drawStarted ? "rolling" : "",
                 ].join(" ")}
-                disabled={session.status !== "picking"}
+                disabled={session?.status !== "picking"}
                 key={candidate.plate}
                 type="button"
                 onClick={() => selectPlate(candidate.plate)}
@@ -391,16 +443,11 @@ function App() {
               <strong>{selectedCandidate ? compactPlate(selectedCandidate.plate) : "尚未选择"}</strong>
             </div>
             <div className="kiosk-actions">
-              <button className="kiosk-secondary" type="button" onClick={() => setScreen("notice")}>
+              <button className="kiosk-secondary" type="button" onClick={() => {
+                setScreen("notice");
+                setDrawStarted(false);
+              }}>
                 上一步
-              </button>
-              <button
-                className="kiosk-primary"
-                disabled={!session || session.status !== "picking" || !session.selectedPlate}
-                type="button"
-                onClick={confirmPlate}
-              >
-                确认号牌
               </button>
             </div>
           </footer>
@@ -466,6 +513,15 @@ function formatSeconds(seconds: number): string {
 
 function compactPlate(plate: string): string {
   return normalizePlate(plate);
+}
+
+function shuffleCandidates<T>(items: T[]): T[] {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+  return next;
 }
 
 export default App;
