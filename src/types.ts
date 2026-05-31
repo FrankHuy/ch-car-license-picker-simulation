@@ -17,6 +17,8 @@ export interface PickerConfig {
   requiredNumbers: string[];
   requiredPatterns: string[];
   countdownSeconds: number;
+  ownerName: string;
+  vehicleBrand: string;
 }
 
 export interface PlateCandidate {

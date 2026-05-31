@@ -590,6 +590,14 @@ textarea:focus {
   pointer-events: none;
 }
 
+.official-plate.tail-center-left {
+  grid-column: 3;
+}
+
+.official-plate.tail-center-right {
+  grid-column: 4;
+}
+
 .kiosk-footer {
   align-items: center;
   background: transparent;
@@ -600,20 +608,21 @@ textarea:focus {
   padding: 10px 24px 0;
 }
 
-.chosen-readout {
+.vehicle-readout {
   align-items: center;
   display: flex;
-  gap: 18px;
+  gap: 16px;
 }
 
-.chosen-readout span {
+.vehicle-readout span,
+.vehicle-readout i {
   color: #565247;
-  font-size: 14px;
+  font-size: 13px;
+  font-style: normal;
 }
 
-.chosen-readout strong {
-  color: #d12121;
-  font-size: 24px;
+.vehicle-readout span {
+  white-space: nowrap;
 }
 
 .success-panel {

@@ -141,6 +141,18 @@ function App() {
     setScreen("picking");
   }
 
+  function enterKiosk() {
+    const result = generateCandidates(config);
+    const regexWarnings = result.warnings.filter((warning) => warning.startsWith("正则 "));
+
+    if (regexWarnings.length > 0) {
+      window.alert(regexWarnings.join("\n"));
+      return;
+    }
+
+    setScreen("notice");
+  }
+
   function startDraw() {
     if (!session || session.status !== "picking" || displayCandidates.length === 0) {
       return;
@@ -305,13 +317,35 @@ function App() {
                 }
               />
             </div>
+
+            <div className="field-group">
+              <label htmlFor="ownerName">所有人</label>
+              <input
+                id="ownerName"
+                value={config.ownerName}
+                onChange={(event) =>
+                  updateConfig({ ...config, ownerName: event.target.value })
+                }
+              />
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="vehicleBrand">车辆品牌</label>
+              <input
+                id="vehicleBrand"
+                value={config.vehicleBrand}
+                onChange={(event) =>
+                  updateConfig({ ...config, vehicleBrand: event.target.value })
+                }
+              />
+            </div>
           </div>
 
           <footer className="preset-actions">
             <button className="quiet-button" type="button" onClick={resetConfig}>
               恢复默认
             </button>
-            <button className="start-button" type="button" onClick={() => setScreen("notice")}>
+            <button className="start-button" type="button" onClick={enterKiosk}>
               进入车管所选号界面
             </button>
           </footer>
@@ -353,13 +387,6 @@ function App() {
               <p>三、确认号牌后，本次选号结果生效；超时未确认的，本轮选号自动失效。</p>
               <p>四、选号过程中请勿刷新、关闭页面或离开终端。</p>
             </div>
-            {session?.warnings.length ? (
-              <div className="system-warning">
-                {session.warnings.map((warning) => (
-                  <p key={warning}>{warning}</p>
-                ))}
-              </div>
-            ) : null}
           </div>
 
           <div className="notice-actions">
@@ -410,14 +437,6 @@ function App() {
             <div className="expired-banner">选号时间已到，本轮随机选号失效。</div>
           ) : null}
 
-          {session?.warnings.length ? (
-            <div className="system-warning slim">
-              {session.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
-              ))}
-            </div>
-          ) : null}
-
           <div className="official-plate-grid">
             {displayCandidates.map((candidate, index) => (
               <button
@@ -425,6 +444,8 @@ function App() {
                   "official-plate",
                   session?.selectedPlate === candidate.plate ? "selected" : "",
                   !drawStarted ? "rolling" : "",
+                  index === 48 ? "tail-center-left" : "",
+                  index === 49 ? "tail-center-right" : "",
                 ].join(" ")}
                 disabled={session?.status !== "picking"}
                 key={candidate.plate}
@@ -438,9 +459,10 @@ function App() {
           </div>
 
           <footer className="kiosk-footer">
-            <div className="chosen-readout">
-              <span>已选号牌</span>
-              <strong>{selectedCandidate ? compactPlate(selectedCandidate.plate) : "尚未选择"}</strong>
+            <div className="vehicle-readout">
+              <span>所有人：{config.ownerName || "未填写"}</span>
+              <i>|</i>
+              <span>车辆品牌：{config.vehicleBrand || "未填写"}</span>
             </div>
             <div className="kiosk-actions">
               <button className="kiosk-secondary" type="button" onClick={() => {
