@@ -526,11 +526,17 @@ function App() {
             <div className="balloon balloon-right" />
           </div>
           <div className="notice-actions">
-            <button className="kiosk-secondary" type="button" onClick={() => setScreen("preset")}>
-              返回预设
-            </button>
-            <button className="kiosk-primary" type="button" onClick={() => setScreen("notice")}>
-              办理下一笔业务
+            <button
+              className="draw-button confirm"
+              type="button"
+              onClick={() => {
+                setScreen("preset");
+                setSession(null);
+                setDrawStarted(false);
+                setDisplayCandidates([]);
+              }}
+            >
+              完成选号
             </button>
           </div>
           <KioskFooter config={config} />

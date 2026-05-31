@@ -46,7 +46,7 @@ export function createDefaultConfig(): PickerConfig {
     requiredNumbers: ["京A88888"],
     requiredPatterns: ["^京A.*(666|888)$"],
     countdownSeconds: 90,
-    ownerName: "王天伦",
+    ownerName: "张三",
     vehicleBrand: "比亚迪牌BYD7005BEVA8",
   };
 }
