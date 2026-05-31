@@ -304,6 +304,7 @@ textarea:focus {
   display: flex;
   gap: 12px;
   justify-content: end;
+  min-height: 1px;
 }
 
 .header-status span {

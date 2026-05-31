@@ -370,9 +370,6 @@ function App() {
         </div>
         <div className="header-status">
           <span>{PLATE_TYPE_LABELS[config.plateType]}</span>
-          <button type="button" onClick={() => setScreen("preset")}>
-            返回预设
-          </button>
         </div>
       </header>
 
@@ -474,12 +471,6 @@ function App() {
               <span>车辆品牌：{config.vehicleBrand || "未填写"}</span>
             </div>
             <div className="kiosk-actions">
-              <button className="kiosk-secondary" type="button" onClick={() => {
-                setScreen("notice");
-                setDrawStarted(false);
-              }}>
-                上一步
-              </button>
             </div>
           </footer>
         </section>
