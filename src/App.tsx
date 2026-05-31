@@ -6,15 +6,9 @@ import {
   getSequenceLength,
   normalizePlate,
 } from "./plateEngine";
-import type { CandidateSource, PickerConfig, PickSession, PlateSegment, PlateType } from "./types";
+import type { PickerConfig, PickSession, PlateSegment, PlateType } from "./types";
 
-type Screen = "preset" | "notice" | "picking" | "done";
-
-const SOURCE_LABELS: Record<CandidateSource, string> = {
-  "required-list": "预置",
-  "required-regex": "规则",
-  random: "随机",
-};
+type Screen = "preset" | "notice" | "picking" | "confirm" | "done";
 
 const PLATE_TYPE_LABELS: Record<PlateType, string> = {
   blue: "小型汽车号牌",
@@ -176,8 +170,20 @@ function App() {
   function confirmPlate() {
     setSession((current) =>
       current?.status === "picking" && current.selectedPlate
-        ? { ...current, confirmedPlate: current.selectedPlate, status: "confirmed" }
+        ? { ...current, confirmedPlate: current.selectedPlate }
         : current,
+    );
+    setScreen("confirm");
+  }
+
+  function returnToPicking() {
+    setSession((current) => current ? { ...current, confirmedPlate: undefined } : current);
+    setScreen("picking");
+  }
+
+  function completePlatePick() {
+    setSession((current) =>
+      current?.confirmedPlate ? { ...current, status: "confirmed" } : current,
     );
     setScreen("done");
   }
@@ -371,10 +377,13 @@ function App() {
       </header>
 
       <section className="process-bar">
-        <Step active={screen === "notice"} done={screen !== "notice"} label="第一步：阅读须知" />
-        <Step active={screen === "picking"} done={screen === "done"} label="第二步：随机选号" />
-        <Step active={screen === "done"} done={screen === "done"} label="第三步：确认号牌" />
-        <Step active={screen === "done"} done={screen === "done"} label="完成" />
+        <Step active={screen === "notice"} done={screen !== "notice"} label="阶段一：阅读选号须知" />
+        <Step
+          active={screen === "picking" || screen === "confirm"}
+          done={screen === "done"}
+          label="阶段二：选择号牌"
+        />
+        <Step active={screen === "done"} done={screen === "done"} label="阶段三：完成选号" />
       </section>
 
       {screen === "notice" ? (
@@ -476,19 +485,45 @@ function App() {
         </section>
       ) : null}
 
+      {screen === "confirm" && session?.confirmedPlate ? (
+        <section className="confirm-screen">
+          <div className="confirm-topline">
+            请在 <b>{remaining}</b> 秒内完成选号，您可以翻页查看并点选心仪的号牌。
+          </div>
+
+          <div className="confirm-number-box">
+            <span>您当前选择号码：</span>
+            <strong>{compactPlate(session.confirmedPlate)}</strong>
+          </div>
+
+          <div className="confirm-actions">
+            <button className="return-button" type="button" onClick={returnToPicking}>
+              返回重选
+            </button>
+            <button
+              className="draw-button confirm"
+              disabled={session.status !== "picking"}
+              type="button"
+              onClick={completePlatePick}
+            >
+              确认号牌
+            </button>
+          </div>
+
+          <KioskFooter config={config} />
+        </section>
+      ) : null}
+
       {screen === "done" && session?.confirmedPlate ? (
         <section className="done-screen">
           <div className="success-panel">
-            <div className="success-mark">选号成功</div>
-            <p>您已确认机动车号牌</p>
-            <strong>{compactPlate(session.confirmedPlate)}</strong>
-            <span>
-              来源：
-              {SOURCE_LABELS[
-                session.candidates.find((item) => item.plate === session.confirmedPlate)?.source ??
-                  "random"
-              ]}
-            </span>
+            <p>恭喜您，已成功完成选号！</p>
+            <div className="final-card">
+              <span>您的爱车号牌号码为：</span>
+              <strong>{compactPlate(session.confirmedPlate)}</strong>
+            </div>
+            <div className="balloon balloon-left" />
+            <div className="balloon balloon-right" />
           </div>
           <div className="notice-actions">
             <button className="kiosk-secondary" type="button" onClick={() => setScreen("preset")}>
@@ -498,9 +533,22 @@ function App() {
               办理下一笔业务
             </button>
           </div>
+          <KioskFooter config={config} />
         </section>
       ) : null}
     </main>
+  );
+}
+
+function KioskFooter({ config }: { config: PickerConfig }) {
+  return (
+    <footer className="kiosk-footer">
+      <div className="vehicle-readout">
+        <span>所有人：{config.ownerName || "未填写"}</span>
+        <i>|</i>
+        <span>车辆品牌：{config.vehicleBrand || "未填写"}</span>
+      </div>
+    </footer>
   );
 }
 
