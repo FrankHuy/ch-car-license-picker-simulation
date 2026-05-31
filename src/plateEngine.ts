@@ -11,6 +11,7 @@ const SEQUENCE_ALPHABET = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const VALID_SEQUENCE = /^[0-9A-HJ-NP-Z]+$/;
 const FULL_PLATE = /^([\u4e00-\u9fa5])([A-Z])([0-9A-HJ-NP-Z]+)$/;
 const TARGET_COUNT = 50;
+const REGEX_SCAN_LIMIT = 30000;
 const REGEX_SAMPLE_LIMIT = 3000;
 
 const PLATE_RULES: Record<PlateType, { sequenceLength: number; label: string }> = {
@@ -129,8 +130,21 @@ export function generateCandidates(config: PickerConfig): GenerateResult {
       continue;
     }
 
+    const matchedBefore = candidates.some((candidate) => candidate.matchedRule === pattern);
+    const scanResult = scanRegexMatches(normalizedSegments, regex);
+    for (const plate of scanResult.matches) {
+      if (candidates.length >= TARGET_COUNT) {
+        break;
+      }
+      addCandidate(candidates, seen, plate, "required-regex", pattern);
+    }
+
     let attempts = 0;
-    while (candidates.length < TARGET_COUNT && attempts < REGEX_SAMPLE_LIMIT) {
+    while (
+      candidates.length < TARGET_COUNT &&
+      !scanResult.completed &&
+      attempts < REGEX_SAMPLE_LIMIT
+    ) {
       attempts += 1;
       const plate = randomPlateFromSegments(normalizedSegments);
       regex.lastIndex = 0;
@@ -139,7 +153,7 @@ export function generateCandidates(config: PickerConfig): GenerateResult {
       }
     }
 
-    if (!candidates.some((candidate) => candidate.matchedRule === pattern)) {
+    if (!matchedBefore && !candidates.some((candidate) => candidate.matchedRule === pattern)) {
       warnings.push(`正则 ${pattern} 在采样中未命中可用号牌。`);
     }
   }
@@ -261,6 +275,31 @@ function randomPlateFromSegments(segments: NormalizedSegment[]): string {
   const segment = segments[Math.floor(Math.random() * segments.length)];
   const sequenceIndex = randomInteger(segment.startIndex, segment.endIndex);
   return `${segment.province}${segment.authority}${indexToSequence(sequenceIndex, segment.sequenceLength)}`;
+}
+
+function scanRegexMatches(
+  segments: NormalizedSegment[],
+  regex: RegExp,
+): { completed: boolean; matches: string[] } {
+  const matches: string[] = [];
+  let scanned = 0;
+
+  for (const segment of segments) {
+    for (let index = segment.startIndex; index <= segment.endIndex; index += 1) {
+      if (scanned >= REGEX_SCAN_LIMIT) {
+        return { completed: false, matches };
+      }
+
+      scanned += 1;
+      const plate = `${segment.province}${segment.authority}${indexToSequence(index, segment.sequenceLength)}`;
+      regex.lastIndex = 0;
+      if (regex.test(plate)) {
+        matches.push(plate);
+      }
+    }
+  }
+
+  return { completed: true, matches };
 }
 
 function randomInteger(min: number, max: number): number {
